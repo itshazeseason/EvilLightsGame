@@ -1,9 +1,9 @@
 module ctrl (
     input clk,  // clock
     input rst,  // reset
-    output regfile_write_address[4],
-    output regfile_read_address_a[4],
-    output regfile_read_address_b[4],
+    output regfile_write_address[4], //Rc
+    output regfile_read_address_a[4], //Ra
+    output regfile_read_address_b[4], //Rb
     output we_regfile,
     output literal[16],
     output alufn[6],
