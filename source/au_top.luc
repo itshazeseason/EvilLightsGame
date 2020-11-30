@@ -1,0 +1,71 @@
+module au_top (
+    input clk,              // 100MHz clock
+    input rst_n,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led [3][8],   // LEDs on IO Shield
+    output io_seg [8],      // 7-segment LEDs on IO Shield
+    output io_sel [4],      // Digit select on IO Shield
+    input io_button [5],    // 5 buttons on IO Shield
+    input io_dip [3][8]     // DIP switches on IO Shield
+  ) {
+  
+  sig rst;                  // reset signal
+  sig sw[5];                // 5 switches, input connected to io_button
+  sig sw2[2];               // 2 switches, input connected to io_dip
+  
+  .clk(clk) {
+    // The reset conditioner is used to synchronize the reset signal to the FPGA
+    // clock. This ensures the entire FPGA comes out of reset at the same time.
+    reset_conditioner reset_cond;
+  }
+  
+  //use on-board button switch to simulate
+  // io_button[1] is Start button (middle button)
+  button_conditioner button[5](.clk(clk));
+  edge_detector button_edge[5] (#RISE(1), #FALL(0), .clk(clk)) ;
+  button_conditioner button2[2](.clk(clk));
+  edge_detector button_edge2[2] (#RISE(1), #FALL(0), .clk(clk)) ;
+
+  game  gameunit ( .clk(clk), .rst(rst) );
+  
+  always {
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    
+    usb_tx = usb_rx;        // loop serial port
+    
+    led = 8h00;             // turn LEDs off
+    
+    io_led = 3x{{8h00}};    // turn LEDs off
+    io_seg = 8hff;          // turn segments off
+    io_sel = 4hf;           // select no digits
+
+    button.in = io_button;
+    button_edge.in = button.out ;
+    sw = button_edge.out;
+    
+    button2.in = io_dip[0][1:0];
+    button_edge2.in = button2.out;
+    sw2 = button_edge2.out;
+    
+    
+    gameunit.sw[6] = sw[1];     //start button (centre)
+    gameunit.sw[5] = sw[3];     //P1 Red (left)
+    gameunit.sw[4] = sw[4];     //P1 Green (right)
+    gameunit.sw[3] = sw2[0];    //P1 Blue (dip[0][0])
+    gameunit.sw[2] = sw[0];     //P2 Red (up)
+    gameunit.sw[1] = sw[2];     //P2 Green (down)
+    gameunit.sw[0] = sw2[1];     //P1 Yellow (dip[0][1])
+       
+    io_led[0] = gameunit.led[4:0] ;
+    io_led[1] = gameunit.p2score[4:0] ;
+    io_led[2] = gameunit.p1score[4:0] ;
+//    io_led[2] = gameunit.debug[2] ;
+    io_seg = ~ c{0, gameunit.sevenseg};
+    io_sel = 4b0111; 
+    
+    
+  }
+}

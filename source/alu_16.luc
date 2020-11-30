@@ -1,0 +1,57 @@
+module alu_16 (
+    input a[16],
+    input b[16],
+    input alufn[6],
+    output out[16],
+    output z,
+    output v,
+    output n
+  ) {
+  
+  alu_adder adderUnit;
+  alu_boolean booleanUnit;
+  alu_shifter shifterUnit;
+  alu_compare compareUnit; 
+  mx16x16 multiplierUnit;
+  
+  always {
+    
+    adderUnit.subtract = alufn[0];
+    adderUnit.a = a;
+    adderUnit.b = b;
+    
+    z = adderUnit.z;
+    v = adderUnit.v;
+    n = adderUnit.n; 
+    
+    compareUnit.alufn = alufn[3:0];
+    compareUnit.z = adderUnit.z;
+    compareUnit.v = adderUnit.v;
+    compareUnit.n = adderUnit.n;
+    
+    booleanUnit.alufn = alufn[3:0];
+    booleanUnit.a = a;
+    booleanUnit.b = b;
+    
+    shifterUnit.alufn = alufn[3:0];
+    shifterUnit.a = a;
+    shifterUnit.b = b[3:0];
+    
+    multiplierUnit.a = a;
+    multiplierUnit.b = b;
+    
+    case(alufn[5:4]) {
+      2b00 : 
+        if (alufn[1]) {
+          out = multiplierUnit.out;
+        } else {
+          out = adderUnit.out;
+        }
+      2b01 : out = booleanUnit.out;
+      2b10 : out = shifterUnit.out;
+      2b11 : out = compareUnit.out;
+      default: out = 16b0;
+    }
+   
+  }
+}

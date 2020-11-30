@@ -1,0 +1,11 @@
++--------------------------+--------------------------+----------------------------------------------------------------------------------------------------------+
+|       Launch Clock       |      Capture Clock       |                                                 Pin                                                      |
++--------------------------+--------------------------+----------------------------------------------------------------------------------------------------------+
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[24]/D|
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[49]/D|
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[52]/D|
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[45]/D|
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[60]/D|
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[25]/D|
+|                    clk_0 |                    clk_0 |                                                       gameunit/ctrlunit/FSM_onehot_M_game_fsm_q_reg[26]/D|
++--------------------------+--------------------------+----------------------------------------------------------------------------------------------------------+

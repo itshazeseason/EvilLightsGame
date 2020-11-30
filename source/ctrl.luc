@@ -1,0 +1,640 @@
+module ctrl (
+    input clk,  // clock
+    input rst,  // reset
+    output regfile_write_address[4],
+    output regfile_read_address_a[4],
+    output regfile_read_address_b[4],
+    output we_regfile,
+    output literal[16],
+    output alufn[6],
+    input  z,
+    output bsel,
+    output outsel
+    
+  ) {
+
+    // ALUFN
+    const ADD = 6b000000;      
+    const SUB = 6b000001;  
+    const MUL = 6b000010;  
+    const AND = 6b011000;  
+    const OR = 6b011110; 
+    const XOR = 6b010110;  
+    const A = 6b011010;  
+    const B = 6b011100;  
+    const BCA = 6b010010;     
+    const ACB = 6b010100;     
+    const SHL = 6b100000;  
+    const SHR = 6b100001;  
+    const SRA = 6b100011;  
+    const ROL = 6b100100;  
+    const ROR = 6b100101;  
+    const RVA = 6b100111;    
+    const CMPEQ = 6b110011;    
+    const CMPLT = 6b110101;    
+    const CMPLE= 6b110111;
+    
+  // Registers
+  const REG_P1    = 4b0000;   //R0 P1 score
+  const REG_P2    = 4b0001;   //R1 P2 score
+  const REG_ROUND = 4b0010;   //R2 round 
+  const REG_LEDCD = 4b0011;   //R3 LED code
+  const REG_TEMP  = 4b0100;   //R4 temp register
+  const REG_TEMP2 = 4b0101;   //R5 temp register
+  const REG_TEMP3 = 4b0110;   //R6 temp register
+  const REG_TEMP4 = 4b0111;   //R7 temp register
+  const REG_7SEG  = 4b1000;   //R8 7seg output
+  const REG_P1LED = 4b1001;   //R9 P1 score display
+  const REG_P2LED = 4b1010;   //R10 P2 score display
+  const REG_LED   = 4b1011;   //R11 LED
+  const REG_RND   = 4b1100;   //R12 random number register
+  const REG_TIMER = 4b1101;   //R13 timer register
+  const REG_SW    = 4b1110;   //R14 input port register
+  
+
+//  dff cnt[2] ( .clk(clk), .rst(rst) );
+  
+  .clk(clk){
+    fsm game_fsm={
+      START,                   // Start state
+      S1, S2, S3, S4, S5,      // Get ready to start game
+      L1, L2, L3, L4,          // Set random LEDCD (value between 0-5)
+      R1, R2, R3, R4, R5, R6, R7, R8, R9, R10,    // 7Segment blinking and timer before round starts
+      F1, F2, F3, F4, F5, F6, F7, F8, F9,         // Set Display LEDs and Prep to check button
+      C1, C2, C3, C4, C5, C6, C7, C8, C9, C10,    // Checking of buttons and faults
+      C11, C12, C13, C14, C15, C16, C17, C18, C19, C20, C21,
+      P1W1, P1W2, P1W3,        //P1 add score
+      P2W1, P2W2, P2W3,        //P2 add score
+      W1, W2, W3,              // Checking if game end or move to next round
+      E1, E2, E3, E4           // Game over, show winner
+        
+    };
+
+
+  }
+  
+  always {
+
+    // standard setting unless otherwise overwritten by each case 
+    we_regfile = 0;
+    regfile_write_address  = REG_TEMP;
+    regfile_read_address_a = REG_TEMP;
+    regfile_read_address_b = REG_TIMER;
+    literal = 0;
+    bsel = 0;
+    outsel = 0;
+    alufn = B;
+    
+//    cnt.d = cnt.q;
+    
+    if (rst){
+      game_fsm.d = game_fsm.START;
+    } else {
+      case(game_fsm.q) {
+        game_fsm.START:        //WAIT FOR START
+          we_regfile = 0;
+          regfile_read_address_a = REG_SW;
+          literal = 16b1000000;      //chk start switch
+          bsel = 1; 
+          alufn = AND;
+          if (~z) {
+            game_fsm.d = game_fsm.S1;
+          }
+
+        game_fsm.S1:           //P1 SCORE CLEAR
+          we_regfile = 1;
+          regfile_write_address  = REG_P1;
+          literal = 0;
+          bsel = 1; 
+          game_fsm.d = game_fsm.S2;
+          
+        game_fsm.S2:           //P2 SCORE CLEAR
+          we_regfile = 1;
+          regfile_write_address  = REG_P2;
+          literal = 0;
+          bsel = 1; 
+          game_fsm.d = game_fsm.S3;
+          
+        game_fsm.S3:           //SET SEG ROUND = 5
+          we_regfile = 1;
+          regfile_write_address  = REG_ROUND;
+          literal = 5;
+          bsel = 1; 
+          game_fsm.d = game_fsm.S4;
+          
+        game_fsm.S4:           //DISP P1 LIGHT
+          we_regfile = 1;
+          regfile_read_address_b = REG_P1;   
+          regfile_write_address  = REG_P1LED;
+          game_fsm.d = game_fsm.S5;
+          
+        game_fsm.S5:           //DISP P2 LIGHT
+          we_regfile = 1;
+          regfile_read_address_b = REG_P2;   
+          regfile_write_address  = REG_P2LED;
+          game_fsm.d = game_fsm.L1;               
+          
+        game_fsm.L1:           //CLEAR RGB LED
+          we_regfile = 1;
+          regfile_write_address  = REG_LED;
+          literal = 0;
+          bsel = 1; 
+          game_fsm.d = game_fsm.L2;
+          
+        game_fsm.L2:           //GET RANDOM NUMBER PART 1 | temp = rnd>>3
+          we_regfile = 1;
+          regfile_read_address_a = REG_RND;
+          regfile_write_address  = REG_TEMP;
+          literal = 3;
+          bsel = 1; 
+          alufn = SHR;
+          game_fsm.d = game_fsm.L3;
+          
+        game_fsm.L3:           //GET RANDOM NUMBER PART 2 |temp = temp*6
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;
+          regfile_write_address  = REG_TEMP;
+          literal = 6;
+          bsel = 1; 
+          alufn = MUL;
+          game_fsm.d = game_fsm.L4;
+          
+        game_fsm.L4:           //SET RGB LED | ledcode = temp >> 13
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;
+//          regfile_read_address_b = REG_ROUND;      //DBG debug by using the round number as led code
+          regfile_write_address  = REG_LEDCD;      //0~5
+          literal = 13;                            //DBG
+          bsel = 1;                                //DBG 
+          alufn = SHR;                             //DBG 
+          game_fsm.d = game_fsm.R1;
+          
+        game_fsm.R1:           //set REG_TIMER 3sec
+          we_regfile = 1;
+          regfile_write_address  = REG_TIMER;
+          literal = 2290;
+          bsel = 1; 
+          game_fsm.d = game_fsm.R2;
+        
+        game_fsm.R2:           //DISPLAY ROUND
+          we_regfile = 1;
+          regfile_read_address_b = REG_ROUND;   
+//          regfile_read_address_b = REG_LEDCD;     //DBG
+          regfile_write_address  = REG_7SEG;
+          outsel = 1;
+          game_fsm.d = game_fsm.R3;
+          
+        game_fsm.R3:           //SET BLINK COUNT = 3
+          we_regfile = 1;
+          regfile_write_address  = REG_TEMP;
+          literal = 3;
+          bsel = 1; 
+          game_fsm.d = game_fsm.R4;
+        
+        game_fsm.R4:           //WAIT BLINK TIME OUT
+          we_regfile = 0;
+          regfile_read_address_b = REG_TIMER;
+          if (z) {
+            game_fsm.d = game_fsm.R5;
+          }
+
+        game_fsm.R5:        //BLANK 7 SEG
+          we_regfile = 1;
+          regfile_write_address  = REG_7SEG;
+          literal = 0;
+          bsel = 1; 
+          game_fsm.d = game_fsm.R6;
+          
+        game_fsm.R6:           //SET REG_TIMER 0.4sec
+          we_regfile = 1;
+          regfile_write_address  = REG_TIMER;
+          literal = 308;  //off time * 1.31ms
+          bsel = 1; 
+          game_fsm.d = game_fsm.R7;
+          
+        game_fsm.R7:           //WAIT TIMER TIME OUT
+          we_regfile = 0;
+          regfile_read_address_b = REG_TIMER;
+          if (z) {
+            game_fsm.d = game_fsm.R8;
+          }
+
+        game_fsm.R8:        //SEG ROUND UPDATE 
+          we_regfile = 1;
+          regfile_read_address_b = REG_ROUND;   
+//          regfile_read_address_b = REG_LEDCD;     //DBG
+          regfile_write_address  = REG_7SEG;
+          outsel = 1;
+          game_fsm.d = game_fsm.R9;
+          
+        game_fsm.R9:        //CHECK FLASH END
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;
+          regfile_write_address  = REG_TEMP;
+          literal = 1;
+          bsel = 1; 
+          alufn = SUB;
+          if (z) {
+            game_fsm.d = game_fsm.F1;    //end of flash
+          } else {
+            game_fsm.d = game_fsm.R10;    //more flash, self loop
+          }
+                    
+        game_fsm.R10:           //SET REG TIMER 1 SEC
+          we_regfile = 1;
+          regfile_write_address  = REG_TIMER;
+          literal = 763;
+          bsel = 1; 
+          game_fsm.d = game_fsm.R4;
+          
+        game_fsm.F1:           //CHECK LED CODE BIT 0 
+          we_regfile = 0;
+          regfile_read_address_a = REG_LEDCD;   // 0 ~ 5
+          literal = 1;
+          bsel = 1; 
+          alufn = AND;
+          if (z) {
+            game_fsm.d = game_fsm.F2;    //LEDcode bit0 is 0  label mode
+          } else {
+            game_fsm.d = game_fsm.F3;    //LEDcode bit0 is 1  LED mode
+          }
+          
+        game_fsm.F2:           //TEMP = 5b10000    SET LABEL MODE
+          we_regfile = 1;
+          regfile_write_address  = REG_TEMP; 
+          literal = 16;
+          bsel = 1; 
+          game_fsm.d = game_fsm.F4;
+          
+        game_fsm.F3:           //TEMP = 5b01000    SET LED MODE
+          we_regfile = 1;
+          regfile_write_address  = REG_TEMP; 
+          literal = 8;
+          bsel = 1; 
+          game_fsm.d = game_fsm.F4;
+          
+        game_fsm.F4:           //check LED code bit 1 and 2 eq 0 
+          we_regfile = 0;
+          regfile_read_address_a = REG_LEDCD;   // 0 ~ 5
+          literal = 6;
+          bsel = 1; 
+          alufn = AND;
+          if (z) {
+            game_fsm.d = game_fsm.F5;    //LEDcode[2:1] is 00
+          } else {
+            game_fsm.d = game_fsm.F6;    //LEDcode[2:1] is 01 or 10 
+          }
+          
+        game_fsm.F5:           //set bit2  | SET RED LED
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;   // 10000, 01000
+          regfile_read_address_b = REG_SW;     //clr switch input
+          regfile_write_address  = REG_LED; 
+          literal = 4;
+          bsel = 1; 
+          alufn = OR;
+          game_fsm.d = game_fsm.F9;
+          
+        game_fsm.F6:           //check LED code bit 1 
+          we_regfile = 0;
+          regfile_read_address_a = REG_LEDCD;   // 0 ~ 5
+          literal = 2;
+          bsel = 1; 
+          alufn = AND;
+          if (z) {
+            game_fsm.d = game_fsm.F8;    //LEDcode bit1 is 0
+          } else {
+            game_fsm.d = game_fsm.F7;    //LEDcode bit1 is 1
+          }
+          
+        game_fsm.F7:           //set bit1 | SET GREEN LED 
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;   // 10000, 01000
+          regfile_read_address_b = REG_SW;     //clr switch input
+          regfile_write_address  = REG_LED; 
+          literal = 2;
+          bsel = 1; 
+          alufn = OR;
+          game_fsm.d = game_fsm.F9;
+          
+        game_fsm.F8:           //set bit0  | SET BLUE LED
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;   // 10000, 01000
+          regfile_read_address_b = REG_SW;     //clr switch input
+          regfile_write_address  = REG_LED; 
+          literal = 1;
+          bsel = 1; 
+          alufn = OR;
+          game_fsm.d = game_fsm.F9;
+          
+        game_fsm.F9:           //WAIT BUTTON PR
+          we_regfile = 1;
+          regfile_read_address_a = REG_SW;
+          regfile_write_address  = REG_TEMP;    //P1 and P2 button input
+          literal = 16b0111111;      //chk P1 and P2 switch
+          bsel = 1; 
+          alufn = AND;
+          if (~z) {
+            game_fsm.d = game_fsm.C1;
+          }
+
+        game_fsm.C1:           //temp2 = temp & 7    ;get P2 sw
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;      //P1+P2 sw
+          regfile_write_address  = REG_TEMP2;     //P2 sw
+          literal = 7;
+          bsel = 1; 
+          alufn = AND;
+          game_fsm.d = game_fsm.C2;
+          
+        game_fsm.C2:           //temp3 = xE8, set faultchk table: 11101000
+          we_regfile = 1;
+          regfile_write_address  = REG_TEMP3;
+          literal = 16h00E8;
+          bsel = 1; 
+          game_fsm.d = game_fsm.C3;
+                    
+        game_fsm.C3:           //temp4 = xE8>>temp2, get P2 fault
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP3;
+          regfile_read_address_b = REG_TEMP2;
+          regfile_write_address  = REG_TEMP4;
+          alufn = SHR;
+          game_fsm.d = game_fsm.C4;
+                    
+        game_fsm.C4:           //chk P2 fault
+          we_regfile = 0;
+          regfile_read_address_a = REG_TEMP4;
+          literal = 1;          
+          bsel = 1; 
+          alufn = AND;
+          if (~z) {
+            game_fsm.d = game_fsm.P1W1;        //P2 fault, P1 SCORE INCREASE
+          } else {
+            game_fsm.d = game_fsm.C5;
+          }
+          
+        game_fsm.C5:           //temp = temp>>3, get P1 sw
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP;    //P1+P2 sw
+          regfile_write_address  = REG_TEMP;    //P1 sw
+          literal = 3;          
+          bsel = 1; 
+          alufn = SHR;
+          game_fsm.d = game_fsm.C6;
+          
+        game_fsm.C6:           //temp4 = temp3>>temp, get P1 fault
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP3;     //fault table
+          regfile_read_address_b = REG_TEMP;      // P1 sw
+          regfile_write_address  = REG_TEMP4;     // P1 fault
+          alufn = SHR;
+          game_fsm.d = game_fsm.C7;
+          
+        game_fsm.C7:           //chk P1 fault
+          we_regfile = 0;
+          regfile_read_address_a = REG_TEMP4;
+          literal = 1;          
+          bsel = 1; 
+          alufn = AND;
+          if (~z) {
+            game_fsm.d = game_fsm.P2W1;            //P1 fault, P2 win, P2 SCORE INCREASE
+          } else {
+            game_fsm.d = game_fsm.C8;
+          }
+          
+        game_fsm.C8:           //temp3 = x79E, set expected input table: 01 11 10 01 11 10
+          we_regfile = 1;
+          regfile_write_address  = REG_TEMP3;
+          literal = 16h079E;
+          bsel = 1; 
+          game_fsm.d = game_fsm.C9;
+                    
+        game_fsm.C9:           //temp3 = temp3>>ledcode, get expected input part 1
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP3;
+          regfile_read_address_b = REG_LEDCD;
+          regfile_write_address  = REG_TEMP3;
+          alufn = SHR;
+          game_fsm.d = game_fsm.C10;
+          
+        game_fsm.C10:           //temp3 = temp3>>ledcode, get expected input part 2
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP3;
+          regfile_read_address_b = REG_LEDCD;
+          regfile_write_address  = REG_TEMP3; 
+          alufn = SHR;
+          game_fsm.d = game_fsm.C11;
+          
+        game_fsm.C11:           //temp3 = temp3 & 3, get expected input part 3 GET CORRECT INPUT
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP3; 
+          regfile_write_address  = REG_TEMP3;    //one of  01 10 11
+          literal = 3;
+          bsel = 1; 
+          alufn = AND;
+          game_fsm.d = game_fsm.C12;
+          
+        game_fsm.C12:           //temp4 = x0324, set sw table 00 00 00 11 00 10 01 00
+          we_regfile = 1;
+          regfile_write_address  = REG_TEMP4;
+          literal = 16h0324;
+          bsel = 1; 
+          game_fsm.d = game_fsm.C13;
+                    
+        game_fsm.C13:           //chk P2 no press
+          we_regfile = 0;
+          regfile_read_address_a = REG_TEMP2;    //P2 sw
+          literal = 7;          //chk all 3 P2 buttons          
+          bsel = 1; 
+          alufn = AND;
+          if (z) {
+            game_fsm.d = game_fsm.C14;            //P2 no button press
+          } else {
+            game_fsm.d = game_fsm.C18;            //P2 has (no fault) input
+          }
+          
+        game_fsm.C14:           //convert P1 to sw code part 1
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP4;
+          regfile_read_address_b = REG_TEMP;
+          regfile_write_address  = REG_TEMP4;
+          alufn = SHR;
+          game_fsm.d = game_fsm.C15;
+          
+        game_fsm.C15:           //convert P1 to sw code part 2
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP4;
+          regfile_read_address_b = REG_TEMP;
+          regfile_write_address  = REG_TEMP4;
+          alufn = SHR;
+          game_fsm.d = game_fsm.C16;
+          
+        game_fsm.C16:           //temp4 = temp4 & 3, get P1 sw code part 3
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP4; 
+          regfile_write_address  = REG_TEMP4;    //one of  01 10 11
+          literal = 3;
+          bsel = 1; 
+          alufn = AND;
+          game_fsm.d = game_fsm.C17;
+          
+        game_fsm.C17:           //chk P1 sw code to expected input
+          we_regfile = 0;
+          regfile_read_address_a = REG_TEMP4;    //P1 sw code, one of 01 10 11
+          regfile_read_address_b = REG_TEMP3;    //expected input, one of 01 10 11
+          alufn = CMPEQ;
+          if (~z) {      //z is 0 if equal
+            game_fsm.d = game_fsm.P1W1;            //P1 correct, P1 SCORE INCREASE
+          } else {
+            game_fsm.d = game_fsm.P2W1;            //P1 wrong, P2 SCORE INCREASE
+          }
+          
+        game_fsm.C18:           //convert P2 to sw code part 1
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP4;
+          regfile_read_address_b = REG_TEMP2;
+          regfile_write_address  = REG_TEMP4;
+          alufn = SHR;
+          game_fsm.d = game_fsm.C19;
+          
+        game_fsm.C19:           //convert P2 to sw code part 2
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP4;
+          regfile_read_address_b = REG_TEMP2;
+          regfile_write_address  = REG_TEMP4;
+          alufn = SHR;
+          game_fsm.d = game_fsm.C20;
+          
+        game_fsm.C20:           //temp4 = temp4 & 3, get P2 sw code part 3
+          we_regfile = 1;
+          regfile_read_address_a = REG_TEMP4; 
+          regfile_write_address  = REG_TEMP4;    //one of  01 10 11
+          literal = 3;
+          bsel = 1; 
+          alufn = AND;
+          game_fsm.d = game_fsm.C21;
+          
+        game_fsm.C21:           //chk P2 sw code to expected input
+          we_regfile = 0;
+          regfile_read_address_a = REG_TEMP4;    //P1 sw code, one of 01 10 11
+          regfile_read_address_b = REG_TEMP3;    //expected input, one of 01 10 11
+          alufn = CMPEQ;
+          if (z) {
+            game_fsm.d = game_fsm.P2W1;            //P2 correct, P2 SCORE INCREASE
+          } else {
+            game_fsm.d = game_fsm.P1W1;            //P2 wrong, P1 SCORE INCREASE
+          }
+          
+        game_fsm.P1W1:           //P1 LIGHT SHIFT LEFT (P1 = P1 <<1) 
+          we_regfile = 1;
+          regfile_read_address_a = REG_P1; 
+          regfile_write_address  = REG_P1; 
+          literal = 1;
+          bsel = 1; 
+          alufn = SHL;
+          game_fsm.d = game_fsm.P1W2;
+          
+        game_fsm.P1W2:           //P1 LIGHT ADD 1 (P1 = P1 + 1) 
+          we_regfile = 1;
+          regfile_read_address_a = REG_P1; 
+          regfile_write_address  = REG_P1;  
+          literal = 1;
+          bsel = 1; 
+          alufn = ADD;
+          game_fsm.d = game_fsm.P1W3;
+          
+        game_fsm.P1W3:           //DISP P1 LIGHT  
+          we_regfile = 1;
+          regfile_read_address_b = REG_P1; 
+          regfile_write_address  = REG_P1LED;    
+          game_fsm.d = game_fsm.W1;
+          
+        game_fsm.P2W1:           //P2 LIGHT SHIFT LEFT (P2 = P2 <<1) 
+          we_regfile = 1;
+          regfile_read_address_a = REG_P2; 
+          regfile_write_address  = REG_P2; 
+          literal = 1;
+          bsel = 1; 
+          alufn = SHL;
+          game_fsm.d = game_fsm.P2W2;
+          
+        game_fsm.P2W2:           //P2 LIGHT ADD 1 (P2 = P2 + 1) 
+          we_regfile = 1;
+          regfile_read_address_a = REG_P2; 
+          regfile_write_address  = REG_P2;  
+          literal = 1;
+          bsel = 1; 
+          alufn = ADD;
+          game_fsm.d = game_fsm.P2W3;
+          
+        game_fsm.P2W3:           //DISPLAY P2 LIG 
+          we_regfile = 1;
+          regfile_read_address_b = REG_P2; 
+          regfile_write_address  = REG_P2LED;    
+          game_fsm.d = game_fsm.W1;
+          
+        game_fsm.W1:           //CHECK ROUNDS + ROUND -1
+          we_regfile = 1;
+          regfile_read_address_a = REG_ROUND; 
+          regfile_write_address  = REG_ROUND;  
+          literal = 1;
+          bsel = 1; 
+          alufn = SUB;
+          if (z) {
+            game_fsm.d = game_fsm.E1;            //end of game round = 0
+          } else {
+            game_fsm.d = game_fsm.W2;            //still has more rounds
+          }
+          
+        game_fsm.W2:           //set REG_TIMER 3sec
+          we_regfile = 1;
+          regfile_write_address  = REG_TIMER;
+          literal = 2290;
+          bsel = 1; 
+          game_fsm.d = game_fsm.W3;
+          
+        game_fsm.W3:           //wait time out
+          we_regfile = 0;
+          regfile_read_address_b = REG_TIMER;
+          if (z) {
+            game_fsm.d = game_fsm.L1;
+          }
+
+        game_fsm.E1:           //CHECK WINNER (Compare P1<P2)
+          we_regfile = 0;
+          regfile_read_address_a = REG_P1; 
+          regfile_read_address_b = REG_P2; 
+          alufn = CMPLT;
+          if (z) {
+            game_fsm.d = game_fsm.E2;            //end of game P1 Win
+          } else {
+            game_fsm.d = game_fsm.E3;            //end of game P2 Win
+          }
+          
+         game_fsm.E2:           //P1 WIN (clr P2 LED)
+          we_regfile = 1;
+          regfile_write_address  = REG_P2LED;
+          literal = 0;
+          bsel = 1; 
+          game_fsm.d = game_fsm.E4;
+         
+         game_fsm.E3:           //P2 WIN (clr P1 LED)
+          we_regfile = 1;
+          regfile_write_address  = REG_P1LED;
+          literal = 0;
+          bsel = 1; 
+          game_fsm.d = game_fsm.E4;
+
+         game_fsm.E4:           //GAME END (7 seg display E)
+          we_regfile = 1;
+          regfile_read_address_b = REG_SW;      //clr sw input 
+          regfile_write_address  = REG_7SEG;
+          literal = 7b1111001;
+          bsel = 1; 
+          game_fsm.d = game_fsm.START;
+                    
+      }
+    }
+  }
+}

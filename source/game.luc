@@ -1,0 +1,90 @@
+module game (
+    input clk,  // clock
+    input rst,  // reset
+
+    input sw[7],
+    output sevenseg[7],
+    output p1score[5],
+    output p2score[5],
+    output led[5],
+    output debug[3][16]
+    
+  ) {
+
+  sig wdata[16];
+  sig zflag;
+  sig alu_b[16];
+  sig seg[7];
+  
+  regfile regf ( .clk(clk), .rst(rst) );
+  ctrl  ctrlunit ( .clk(clk), .rst(rst) );
+  alu_16  aluunit ;
+  
+  always {
+  
+    //bsel
+    case (ctrlunit.bsel) {
+      0: alu_b = regf.out_b;
+      1: alu_b = ctrlunit.literal;
+      default: alu_b = regf.out_b;
+    }
+    
+    //alu connection
+    aluunit.a = regf.out_a;
+    aluunit.b = alu_b;
+    aluunit.alufn = ctrlunit.alufn;
+
+    //7seg decoder connection
+    case (alu_b[3:0]) {
+      0: seg = 7b0111111;        //0  SEGC_0 SEGC_O
+      1: seg = 7b0000110;        //1  SEGC_1
+      2: seg = 7b1011011;        //2  SEGC_2
+      3: seg = 7b1001111;        //3  SEGC_3
+      4: seg = 7b1100110;        //4  SEGC_4
+      5: seg = 7b1101101;        //5  SEGC_5 SEGC_S
+      6: seg = 7b1111101;        //6  SEGC_6
+      7: seg = 7b0000111;        //7  SEGC_7
+      8: seg = 7b1111111;        //8  SEGC_8
+      9: seg = 7b1100111;        //9  SEGC_9 SEGC_G_
+      10: seg = 7b1110111;       //A  SEGC_A
+      11: seg = 7b1111100;       //b  SEGC_B_
+      12: seg = 7b0111001;       //C  SEGC_C
+      13: seg = 7b1011110;       //d  SEGC_D_
+      14: seg = 7b1111001;       //E  SEGC_E
+      15: seg = 7b1110001;       //F  SEGC_F
+      default: seg = 0;
+    }
+     
+    //out_sel   
+    case (ctrlunit.outsel) {
+      0: wdata = aluunit.out;
+      1: wdata = c{9b0, seg};
+      default: wdata = aluunit.out;
+    }
+        
+    //regfile connection
+    regf.read_address_a = ctrlunit.regfile_read_address_a;
+    regf.read_address_b = ctrlunit.regfile_read_address_b;
+    regf.we = ctrlunit.we_regfile;
+    regf.write_address = ctrlunit.regfile_write_address;
+    regf.data = wdata;
+    regf.inp = c{ 9b0, sw};
+
+    //output connection
+    sevenseg = regf.outp[0][6:0];
+    p1score = regf.outp[1][4:0];
+    p2score = regf.outp[2][4:0];
+    led = regf.outp[3][4:0];
+    
+    //zflag
+    zflag = ~|wdata;  //nor
+    
+    //ctrl connection
+    ctrlunit.z = zflag;
+    
+    debug[0] = regf.out_b ;
+    debug[1] = regf.out_a ;
+    debug[2] = regf.debug ;
+
+  }
+}

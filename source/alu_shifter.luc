@@ -1,0 +1,99 @@
+module alu_shifter (
+    input a[16],
+    input b[4],
+    input alufn[4],
+    output out[16]
+  ) {
+
+  var i;
+  
+  sig z[16];                     //output  
+  sig rb[4];                     //rotation select bit
+  sig r8[16], r4[16], r2[16];    //intermediate rotation output
+  sig m8[16], m4[16], m2[16];    //intermediate mask output
+  sig r[16];                     //output of rotator
+  sig mask[16];                  //mask output
+  
+  always {
+  
+    //generate rb
+//    rb = b;
+    case (alufn) {
+      4b0000:        //SHL
+        rb = b;
+      4b0001:        //SHR
+        rb = -b;
+      4b0011:        //SRA
+        rb = -b;
+      4b0100:        //ROL
+        rb = b;
+      4b0101:        //ROR
+        rb = -b;
+      default:
+        rb = b;        
+    }
+
+    //generate r and mask    
+//    mask = 16b0;
+//    r = 16b0;
+    if (rb[3]) {      //rotateL 8 bit
+      r8 = c{a[7:0], a[15:8]};
+      m8 = 16h00FF;
+    } else {
+      r8 = a;
+      m8 = 16b0;
+    } 
+    if (rb[2]) {      //rotateL 4 bit
+      r4 = c{r8[11:0], r8[15:12]};
+      m4 = c{m8[11:0], 4b1111};
+    } else {
+      r4 = r8;
+      m4 = m8;
+    } 
+    if (rb[1]) {      //rotateL 2 bit
+      r2 = c{r4[13:0], r4[15:14]};
+      m2 = c{m4[13:0], 2b11};
+    } else {
+      r2 = r4;
+      m2 = m4;
+    } 
+    if (rb[0]) {      //rotateL 1 bit
+      r = c{r2[14:0], r2[15]};
+      mask = c{m2[14:0], 1b1};
+    } else {
+      r = r2;
+      mask = m2;
+    } 
+    
+    //generate z
+//    z = a;
+    case (alufn) {
+      4b0000:        //SHL
+        z = r & ~mask;
+      4b0001:        //SHR
+        if (b==0) {
+          z = r;
+        } else {
+          z = r & mask;
+        }
+      4b0011:        //SRA
+        if (b==0) {
+          z = r;
+        } else {
+          z = (16x{a[15]} & ~mask) | (r & mask);
+        }
+      4b0100:        //ROL
+        z = r;
+      4b0101:        //ROR
+        z = r;
+      4b0111:        //FLIP
+        for (i=0; i<16; i++) {
+          z[i] = a[15-i];
+        }
+      default:
+        z = a;
+    }
+     
+    out = z;
+  }
+}

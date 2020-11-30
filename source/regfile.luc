@@ -1,0 +1,161 @@
+module regfile (
+    input clk,  // clock
+    input rst,  // reset
+    
+    input write_address[4], // write address
+    input we,               // write enable
+    input data[16],         // data in
+    
+    input read_address_a[4], //address port a 
+    input read_address_b[4], //address port b
+    output out_a[16], //read port a
+    output out_b[16],  //read port b
+
+    input inp[16],
+    output outp[4][16],
+    output debug[16]
+  ) {
+  
+  var i;
+  sig timerclk;
+  
+  
+  //internal slow tick clock source for Timer register
+  edge_detector timerclock_edge (#RISE(1), #FALL(1), .clk(clk)) ;    //generate clock pulse for both rising and falling edge
+  counter timer_clock (#SIZE(1), #DIV(17), .clk(clk)) ;              //timer clock generating counter
+  
+  .clk(clk){
+    .rst(rst){
+      dff r0[16];
+      dff r1[16];
+      dff r2[16];
+      dff r3[16];
+      dff r4[16];
+      dff r5[16];
+      dff r6[16];
+      dff r7[16];
+      dff r8[16]; 
+      dff r9[16]; 
+      dff r10[16];
+      dff r11[16];
+      pn_gen rnd ;          //r12 b1100
+      dff timer[16] ;       //r13 b1101
+      dff inreg[16];        //r14
+    }
+  }
+
+  always {
+  
+    //random generator connection
+    rnd.next = 1;      //generate new output every clk
+    rnd.seed = 0;
+
+    // timer operation    
+    timer_clock.rst = ~|timer.q;                //if timer not zero, run timer clock
+    timerclock_edge.in = timer_clock.value;
+    timerclk = timerclock_edge.out;
+    if (timerclk) {
+        timer.d = timer.q - 1;          //timer is down counter
+    }
+    
+    //output port connection
+    outp[0] = r8.q;
+    outp[1] = r9.q;
+    outp[2] = r10.q;
+    outp[3] = r11.q;
+    
+    
+
+    //registers keep values by default
+    r0.d = r0.q;
+    r1.d = r1.q;
+    r2.d = r2.q;
+    r3.d = r3.q;
+    r4.d = r4.q;
+    r5.d = r5.q;
+    r6.d = r6.q;
+    r7.d = r7.q;
+    r8.d = r8.q;
+    r9.d = r9.q;
+    r10.d = r10.q;
+    r11.d = r11.q;
+    inreg.d = inreg.q;
+    
+    //input register: input are latched and cleared when read
+    for (i=0; i<16; i++) {
+      if (inp[i]) {
+        inreg.d[i] = 1;
+      }
+    }
+//    if (read_address_a == 4b1110) {
+//      inreg.d = 0;
+//    }
+    //clear when read from b
+    if (read_address_b == 4b1110) {
+      inreg.d = 0;
+    }
+    
+    
+    //write port
+    if (we){
+      case(write_address){
+        b0000 : r0.d = data;
+        b0001 : r1.d = data;
+        b0010 : r2.d = data;
+        b0011 : r3.d = data;
+        b0100 : r4.d = data;
+        b0101 : r5.d = data;
+        b0110 : r6.d = data;
+        b0111 : r7.d = data;
+        b1000 : r8.d = data;
+        b1001 : r9.d = data;
+        b1010 : r10.d = data;
+        b1011 : r11.d = data;
+        b1101 : timer.d = data;
+      }
+    }
+    
+      
+    //read port a
+    case(read_address_a){
+      b0000 : out_a = r0.q;
+      b0001 : out_a = r1.q;
+      b0010 : out_a = r2.q;
+      b0011 : out_a = r3.q;
+      b0100 : out_a = r4.q;
+      b0101 : out_a = r5.q;
+      b0110 : out_a = r6.q;
+      b0111 : out_a = r7.q;
+      b1000 : out_a = r8.q;
+      b1001 : out_a = r9.q;
+      b1010 : out_a = r10.q;
+      b1011 : out_a = r11.q;
+      b1100 : out_a = rnd.num[15:0];
+      b1101 : out_a = timer.q;
+      b1110 : out_a = inreg.q;
+      default: out_a = 0;
+    }
+    
+    //read port b
+    case(read_address_b){
+      b0000 : out_b = r0.q;
+      b0001 : out_b = r1.q;
+      b0010 : out_b = r2.q;
+      b0011 : out_b = r3.q;
+      b0100 : out_b = r4.q;
+      b0101 : out_b = r5.q;
+      b0110 : out_b = r6.q;
+      b0111 : out_b = r7.q;
+      b1000 : out_b = r8.q;
+      b1001 : out_b = r9.q;
+      b1010 : out_b = r10.q;
+      b1011 : out_b = r11.q;
+      b1100 : out_b = rnd.num[15:0];
+      b1101 : out_b = timer.q;
+      b1110 : out_b = inreg.q;
+      default: out_b = 0;
+    }
+
+    debug = r5.q;
+  }  
+}
