@@ -91,7 +91,7 @@ module ctrl (
       game_fsm.d = game_fsm.START;
     } else {
       case(game_fsm.q) {
-        game_fsm.START:        //WAIT FOR START
+        game_fsm.START:        //WAIT FOR START BUTTON
           we_regfile = 0;
           regfile_read_address_a = REG_SW;
           literal = 16b1000000;      //chk start switch
@@ -169,7 +169,7 @@ module ctrl (
           alufn = SHR;                             //DBG 
           game_fsm.d = game_fsm.R1;
           
-        game_fsm.R1:           //set REG_TIMER 3sec
+        game_fsm.R1:           //SET REG_TIMER 3sec
           we_regfile = 1;
           regfile_write_address  = REG_TIMER;
           literal = 2290;
@@ -198,7 +198,7 @@ module ctrl (
             game_fsm.d = game_fsm.R5;
           }
 
-        game_fsm.R5:        //BLANK 7 SEG
+        game_fsm.R5:        //BLANK 7 SEG | to "blink"
           we_regfile = 1;
           regfile_write_address  = REG_7SEG;
           literal = 0;
@@ -273,7 +273,7 @@ module ctrl (
           bsel = 1; 
           game_fsm.d = game_fsm.F4;
           
-        game_fsm.F4:           //check LED code bit 1 and 2 eq 0 
+        game_fsm.F4:           //CHECK LED CODE BIT 1 and 2 eq 0 
           we_regfile = 0;
           regfile_read_address_a = REG_LEDCD;   // 0 ~ 5
           literal = 6;
@@ -327,7 +327,7 @@ module ctrl (
           alufn = OR;
           game_fsm.d = game_fsm.F9;
           
-        game_fsm.F9:           //WAIT BUTTON PR
+        game_fsm.F9:           //WAIT BUTTON PRESS
           we_regfile = 1;
           regfile_read_address_a = REG_SW;
           regfile_write_address  = REG_TEMP;    //P1 and P2 button input
@@ -338,7 +338,7 @@ module ctrl (
             game_fsm.d = game_fsm.C1;
           }
 
-        game_fsm.C1:           //temp2 = temp & 7    ;get P2 sw
+        game_fsm.C1:           //temp2 = temp & 7    ; GET P2 SW
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP;      //P1+P2 sw
           regfile_write_address  = REG_TEMP2;     //P2 sw
@@ -347,14 +347,14 @@ module ctrl (
           alufn = AND;
           game_fsm.d = game_fsm.C2;
           
-        game_fsm.C2:           //temp3 = xE8, set faultchk table: 11101000
+        game_fsm.C2:           //temp3 = xE8, set faultchk table: 11101000 | SET FAULTCHECK TABLE
           we_regfile = 1;
           regfile_write_address  = REG_TEMP3;
           literal = 16h00E8;
           bsel = 1; 
           game_fsm.d = game_fsm.C3;
                     
-        game_fsm.C3:           //temp4 = xE8>>temp2, get P2 fault
+        game_fsm.C3:           //temp4 = xE8>>temp2, GET P2 FAULT
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP3;
           regfile_read_address_b = REG_TEMP2;
@@ -362,7 +362,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C4;
                     
-        game_fsm.C4:           //chk P2 fault
+        game_fsm.C4:           //CHECK P2 fault
           we_regfile = 0;
           regfile_read_address_a = REG_TEMP4;
           literal = 1;          
@@ -374,7 +374,7 @@ module ctrl (
             game_fsm.d = game_fsm.C5;
           }
           
-        game_fsm.C5:           //temp = temp>>3, get P1 sw
+        game_fsm.C5:           //temp = temp>>3, GET P1 SW
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP;    //P1+P2 sw
           regfile_write_address  = REG_TEMP;    //P1 sw
@@ -383,7 +383,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C6;
           
-        game_fsm.C6:           //temp4 = temp3>>temp, get P1 fault
+        game_fsm.C6:           //temp4 = temp3>>temp, GET P1 FAULT
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP3;     //fault table
           regfile_read_address_b = REG_TEMP;      // P1 sw
@@ -391,7 +391,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C7;
           
-        game_fsm.C7:           //chk P1 fault
+        game_fsm.C7:           //CHECK P1 fault
           we_regfile = 0;
           regfile_read_address_a = REG_TEMP4;
           literal = 1;          
@@ -403,14 +403,14 @@ module ctrl (
             game_fsm.d = game_fsm.C8;
           }
           
-        game_fsm.C8:           //temp3 = x79E, set expected input table: 01 11 10 01 11 10
+        game_fsm.C8:           //temp3 = x79E, set expected input table: 01 11 10 01 11 10 | SET INPUT TABLE
           we_regfile = 1;
           regfile_write_address  = REG_TEMP3;
           literal = 16h079E;
           bsel = 1; 
           game_fsm.d = game_fsm.C9;
                     
-        game_fsm.C9:           //temp3 = temp3>>ledcode, get expected input part 1
+        game_fsm.C9:           //temp3 = temp3>>ledcode, GET EXPECTED INPUT part 1
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP3;
           regfile_read_address_b = REG_LEDCD;
@@ -418,7 +418,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C10;
           
-        game_fsm.C10:           //temp3 = temp3>>ledcode, get expected input part 2
+        game_fsm.C10:           //temp3 = temp3>>ledcode, GET EXPECTED INPUT part 2
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP3;
           regfile_read_address_b = REG_LEDCD;
@@ -426,7 +426,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C11;
           
-        game_fsm.C11:           //temp3 = temp3 & 3, get expected input part 3 GET CORRECT INPUT
+        game_fsm.C11:           //temp3 = temp3 & 3, get expected input part 3 | GET CORRECT INPUT
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP3; 
           regfile_write_address  = REG_TEMP3;    //one of  01 10 11
@@ -435,14 +435,14 @@ module ctrl (
           alufn = AND;
           game_fsm.d = game_fsm.C12;
           
-        game_fsm.C12:           //temp4 = x0324, set sw table 00 00 00 11 00 10 01 00
+        game_fsm.C12:           //temp4 = x0324, set sw table 00 00 00 11 00 10 01 00 | SET SW TABLE
           we_regfile = 1;
           regfile_write_address  = REG_TEMP4;
           literal = 16h0324;
           bsel = 1; 
           game_fsm.d = game_fsm.C13;
                     
-        game_fsm.C13:           //chk P2 no press
+        game_fsm.C13:           //CHECK P2 NO PRESS
           we_regfile = 0;
           regfile_read_address_a = REG_TEMP2;    //P2 sw
           literal = 7;          //chk all 3 P2 buttons          
@@ -454,7 +454,7 @@ module ctrl (
             game_fsm.d = game_fsm.C18;            //P2 has (no fault) input
           }
           
-        game_fsm.C14:           //convert P1 to sw code part 1
+        game_fsm.C14:           //CONVERT P1 TO SW CODE part 1
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP4;
           regfile_read_address_b = REG_TEMP;
@@ -462,7 +462,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C15;
           
-        game_fsm.C15:           //convert P1 to sw code part 2
+        game_fsm.C15:           //CONVERT P1 TO SW CODE part 2
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP4;
           regfile_read_address_b = REG_TEMP;
@@ -470,7 +470,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C16;
           
-        game_fsm.C16:           //temp4 = temp4 & 3, get P1 sw code part 3
+        game_fsm.C16:           //temp4 = temp4 & 3, get P1 sw code part 3 | GET P1 SW CODE
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP4; 
           regfile_write_address  = REG_TEMP4;    //one of  01 10 11
@@ -479,7 +479,7 @@ module ctrl (
           alufn = AND;
           game_fsm.d = game_fsm.C17;
           
-        game_fsm.C17:           //chk P1 sw code to expected input
+        game_fsm.C17:           //chk P1 sw code to expected input | CHECK P1 SW CODE 
           we_regfile = 0;
           regfile_read_address_a = REG_TEMP4;    //P1 sw code, one of 01 10 11
           regfile_read_address_b = REG_TEMP3;    //expected input, one of 01 10 11
@@ -490,7 +490,7 @@ module ctrl (
             game_fsm.d = game_fsm.P2W1;            //P1 wrong, P2 SCORE INCREASE
           }
           
-        game_fsm.C18:           //convert P2 to sw code part 1
+        game_fsm.C18:           //CONVERT P2 TO SW CODE part 1
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP4;
           regfile_read_address_b = REG_TEMP2;
@@ -498,7 +498,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C19;
           
-        game_fsm.C19:           //convert P2 to sw code part 2
+        game_fsm.C19:           //CONVERT P2 TO SW CODE part 2
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP4;
           regfile_read_address_b = REG_TEMP2;
@@ -506,7 +506,7 @@ module ctrl (
           alufn = SHR;
           game_fsm.d = game_fsm.C20;
           
-        game_fsm.C20:           //temp4 = temp4 & 3, get P2 sw code part 3
+        game_fsm.C20:           //temp4 = temp4 & 3, get P2 sw code part 3 | GET P2 SW CODE
           we_regfile = 1;
           regfile_read_address_a = REG_TEMP4; 
           regfile_write_address  = REG_TEMP4;    //one of  01 10 11
@@ -515,7 +515,7 @@ module ctrl (
           alufn = AND;
           game_fsm.d = game_fsm.C21;
           
-        game_fsm.C21:           //chk P2 sw code to expected input
+        game_fsm.C21:           //chk P2 sw code to expected input | CHECK P1 SW CODE
           we_regfile = 0;
           regfile_read_address_a = REG_TEMP4;    //P1 sw code, one of 01 10 11
           regfile_read_address_b = REG_TEMP3;    //expected input, one of 01 10 11
@@ -587,14 +587,14 @@ module ctrl (
             game_fsm.d = game_fsm.W2;            //still has more rounds
           }
           
-        game_fsm.W2:           //set REG_TIMER 3sec
+        game_fsm.W2:           //SET REG_TIMER 3sec
           we_regfile = 1;
           regfile_write_address  = REG_TIMER;
           literal = 2290;
           bsel = 1; 
           game_fsm.d = game_fsm.W3;
           
-        game_fsm.W3:           //wait time out
+        game_fsm.W3:           //WAIT TIME OUT
           we_regfile = 0;
           regfile_read_address_b = REG_TIMER;
           if (z) {
