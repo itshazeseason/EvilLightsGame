@@ -57,13 +57,13 @@ module au_top (
     gameunit.sw[3] = sw2[0];    //P1 Blue (dip[0][0])
     gameunit.sw[2] = sw[0];     //P2 Red (up)
     gameunit.sw[1] = sw[2];     //P2 Green (down)
-    gameunit.sw[0] = sw2[1];     //P1 Yellow (dip[0][1])
+    gameunit.sw[0] = sw2[1];     //P1 Blue (dip[0][1])
        
     io_led[0] = gameunit.led[4:0] ;
     io_led[1] = gameunit.p2score[4:0] ;
     io_led[2] = gameunit.p1score[4:0] ;
 //    io_led[2] = gameunit.debug[2] ;
-    io_seg = ~ c{0, gameunit.sevenseg};
+    io_seg =  c{0, gameunit.sevenseg};
     io_sel = 4b0111; 
     
     

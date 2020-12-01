@@ -77,9 +77,9 @@ module ctrl (
 
     // standard setting unless otherwise overwritten by each case 
     we_regfile = 0;
-    regfile_write_address  = REG_TEMP;
-    regfile_read_address_a = REG_TEMP;
-    regfile_read_address_b = REG_TIMER;
+    regfile_write_address  = REG_TEMP;  //Rc
+    regfile_read_address_a = REG_TEMP;  //Ra
+    regfile_read_address_b = REG_TIMER; //Rb
     literal = 0;
     bsel = 0;
     outsel = 0;
@@ -276,7 +276,7 @@ module ctrl (
         game_fsm.F4:           //CHECK LED CODE BIT 1 and 2 eq 0 
           we_regfile = 0;
           regfile_read_address_a = REG_LEDCD;   // 0 ~ 5
-          literal = 6;
+          literal = 6; //3b110
           bsel = 1; 
           alufn = AND;
           if (z) {
@@ -520,7 +520,7 @@ module ctrl (
           regfile_read_address_a = REG_TEMP4;    //P1 sw code, one of 01 10 11
           regfile_read_address_b = REG_TEMP3;    //expected input, one of 01 10 11
           alufn = CMPEQ;
-          if (z) {
+          if (~z) {
             game_fsm.d = game_fsm.P2W1;            //P2 correct, P2 SCORE INCREASE
           } else {
             game_fsm.d = game_fsm.P1W1;            //P2 wrong, P1 SCORE INCREASE
@@ -544,7 +544,7 @@ module ctrl (
           alufn = ADD;
           game_fsm.d = game_fsm.P1W3;
           
-        game_fsm.P1W3:           //DISP P1 LIGHT  
+        game_fsm.P1W3:           //DISPLAY P1 LIGHT  
           we_regfile = 1;
           regfile_read_address_b = REG_P1; 
           regfile_write_address  = REG_P1LED;    
