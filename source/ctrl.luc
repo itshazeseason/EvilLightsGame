@@ -515,9 +515,9 @@ module ctrl (
           alufn = AND;
           game_fsm.d = game_fsm.C21;
           
-        game_fsm.C21:           //chk P2 sw code to expected input | CHECK P1 SW CODE
+        game_fsm.C21:           //chk P2 sw code to expected input | CHECK P2 SW CODE
           we_regfile = 0;
-          regfile_read_address_a = REG_TEMP4;    //P1 sw code, one of 01 10 11
+          regfile_read_address_a = REG_TEMP4;    //P2 sw code, one of 01 10 11
           regfile_read_address_b = REG_TEMP3;    //expected input, one of 01 10 11
           alufn = CMPEQ;
           if (~z) {
