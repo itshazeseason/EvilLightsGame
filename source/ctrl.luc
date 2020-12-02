@@ -52,7 +52,6 @@ module ctrl (
   const REG_SW    = 4b1110;   //R14 input port register
   
 
-//  dff cnt[2] ( .clk(clk), .rst(rst) );
   
   .clk(clk){
     fsm game_fsm={
@@ -85,7 +84,6 @@ module ctrl (
     outsel = 0;
     alufn = B;
     
-//    cnt.d = cnt.q;
     
     if (rst){
       game_fsm.d = game_fsm.START;
