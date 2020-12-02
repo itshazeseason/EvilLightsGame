@@ -63,6 +63,7 @@ module au_top (
     io_led[1] = gameunit.p2score[4:0] ;
     io_led[2] = gameunit.p1score[4:0] ;
 //    io_led[2] = gameunit.debug[2] ;
+//    io_seg =  ~c{0, gameunit.sevenseg}; // debug, using 7seg on au top
     io_seg =  c{0, gameunit.sevenseg};
     io_sel = 4b0111; 
     
