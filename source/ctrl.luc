@@ -120,13 +120,13 @@ module ctrl (
           bsel = 1; 
           game_fsm.d = game_fsm.S4;
           
-        game_fsm.S4:           //DISP P1 LIGHT
+        game_fsm.S4:           //CLEAR P1 LIGHT
           we_regfile = 1;
           regfile_read_address_b = REG_P1;   
           regfile_write_address  = REG_P1LED;
           game_fsm.d = game_fsm.S5;
           
-        game_fsm.S5:           //DISP P2 LIGHT
+        game_fsm.S5:           //CLEAR P2 LIGHT
           we_regfile = 1;
           regfile_read_address_b = REG_P2;   
           regfile_write_address  = REG_P2LED;
