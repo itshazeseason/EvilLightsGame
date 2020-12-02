@@ -26,3 +26,7 @@ There are 2 game modes: LED and Label. LED mode is simple: press the button that
 The player that is faster in pressing the correct button will earn a point. However, if the player reacts fast and presses the wrong button, the other player will get a point instead. The player with the highest number of points at the end of 5 rounds will win the game! 
 
 **Warning!! If you press more than 1 button at the same time, the other player will get the point!**
+
+
+
+![image](https://user-images.githubusercontent.com/56643991/100895833-f280e780-34f8-11eb-9423-a0f538583252.png)
