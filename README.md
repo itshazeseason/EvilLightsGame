@@ -2,9 +2,13 @@
 
 ## Members
 Hazel Hee Zhenrui 										 1003621
+
 Clement Vimal Ravindran							1004243
+
 Galen Soh Wei Ming 									  1004247
+
 Stephanie Seow Xi Hui								  1004347
+
 Tan Yan Siew 													 1004665
 
 ### Description
@@ -20,4 +24,5 @@ There are 2 game modes: LED and Label. LED mode is simple: press the button that
 #### Earning points
 
 The player that is faster in pressing the correct button will earn a point. However, if the player reacts fast and presses the wrong button, the other player will get a point instead. The player with the highest number of points at the end of 5 rounds will win the game! 
+
 **Warning!! If you press more than 1 button at the same time, the other player will get the point!**
